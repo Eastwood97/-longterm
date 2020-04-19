@@ -10,7 +10,12 @@
           style="width: 200px;"
           placeholder="请输入imsi"
         />
-        <el-button class="filter-item" type="primary" icon="el-icon-search">查找</el-button>
+        <el-button
+          class="filter-item"
+          type="primary"
+          icon="el-icon-search"
+          @click="handleFilter()"
+        >查找</el-button>
 
         <el-button
           class="filter-item"
@@ -73,8 +78,8 @@
       <el-table-column type="selection" min-width="50" />
       <el-table-column type="index" :index="indexMethod" label="id" min-width="100"></el-table-column>
       <el-table-column align="center" label="imsi" min-width="180px" prop="imsi" />
-      <el-table-column align="center" label="归属地" min-width="180px" prop="attribution" />
       <el-table-column align="center" label="抓拍时间" min-width="180px" prop="captureDateTime" />
+      <el-table-column align="center" label="归属地" min-width="180px" prop="attribution" />
       <el-table-column
         align="center"
         label="操作"
@@ -86,6 +91,27 @@
         </template>
       </el-table-column>
     </el-table>
+     <!-- 批量删除-->
+
+    <div style="display: flex;justify-content: space-between;margin: 2px">
+      <el-button
+        v-if="list.length>0"
+        :disabled="multipleSelection.length==0"
+        type="danger"
+        size="mini"
+      >批量删除</el-button>
+
+      <el-pagination
+        v-show="total>0"
+        :total="total"
+        :page-sizes="[10, 20, 100]"
+        :page.sync="listQuery.page"
+        :limit.sync="listQuery.limit"
+        layout="total, sizes, prev, pager, next, jumper"
+        @current-change="currentChange"
+        @size-change="handleSizeChange"
+      />
+    </div>
     <!-- 配置对话框 -->
     <el-dialog :title="'配置'" :visible.sync="configDialog">
       <el-form
@@ -172,23 +198,32 @@
         <el-button type="primary" @click="setConfig">确定</el-button>
       </div>
     </el-dialog>
-    <el-dialog :title="'导入'" :visible.sync="importDialog"  :before-close="handleClose">
+    <el-dialog :title="'导入'" :visible.sync="importDialog" :before-close="handleClose">
       <el-form
         ref="importForm"
         :rules="rules"
         :model="importForm"
         status-icon
-       
         label-position="left"
         label-width="100px"
         style="width: 400px; margin-left:50px;"
       >
         <el-form-item label="开始时间" prop="startTime">
-          <el-date-picker v-model="importForm.startTime" type="date" placeholder="选择日期" disabled="true"></el-date-picker>
+          <el-date-picker
+            v-model="importForm.startTime"
+            type="date"
+            placeholder="选择日期"
+            disabled="true"
+          ></el-date-picker>
         </el-form-item>
 
         <el-form-item label="结束时间" prop="endTime">
-          <el-date-picker v-model="importForm.endTime" type="date" placeholder="选择日期"  :pickerOptions="pickerOptions2"></el-date-picker>
+          <el-date-picker
+            v-model="importForm.endTime"
+            type="date"
+            placeholder="选择日期"
+            :pickerOptions="pickerOptions2"
+          ></el-date-picker>
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
@@ -206,14 +241,17 @@ import {
   getFrequencyPoints,
   doconfig,
   getConfig,
-  importNum,
-  queryNum
+  importNum
 } from "@/api/dashboard";
+import { queryNum } from "@/api/captureNum";
 import { getToken } from "@/utils/auth";
+import Pagination from '@/components/Pagination' // Secondary package based on el-pagination
 export default {
   components: {},
   data() {
     return {
+      total: 0,
+       multipleSelection: [],
       isDisadled1: false,
       isDisadled2: false,
       isDisadled3: false,
@@ -227,11 +265,11 @@ export default {
       timer3: null,
       listLoading: false,
       loading: false,
-       pickerOptions2: {
-          disabledDate(time) {
+      pickerOptions2: {
+        disabledDate(time) {
           return time.getTime() > Date.now(); //设置选择今天以及今天以前的日期
         }
-       },
+      },
       pickerOptions: {
         shortcuts: [
           {
@@ -334,7 +372,7 @@ export default {
     // WebSocket
     if ("WebSocket" in window) {
       this.websocket = new WebSocket(
-        "ws://localhost:8084/websocket/" + userName
+        "ws://localhost:8089/websocket/" + userName
       );
       this.initWebSocket();
     } else {
@@ -439,10 +477,54 @@ export default {
     // 分页查询
     handleFilter() {
       this.listQuery.page = 1;
-      getList(this.listQuery);
+      this.getList(this.listQuery);
     },
 
-    getList(listQuery) {},
+    getList(listQuery) {
+      queryNum(listQuery)
+        .then(response => {
+          this.list = response.data.data.list;
+          this.total = response.data.data.total;
+          this.listLoading = false;
+          this.importForm.startTime=response.data.data.list[0].captureDay
+        })
+        .catch(() => {
+          this.list = [];
+          this.total = 0;
+          this.listLoading = false;
+        });
+    },
+     handleSizeChange(val) {
+      this.listQuery.limit = val
+      this.getList(this.listQuery)
+    },
+
+    currentChange(page) {
+      this.listQuery.page = page
+      this.getList(this.listQuery)
+    },
+     // 批量删除
+    deleteManyNumbers() {
+      this.$confirm(
+        '此操作将删除[' + this.multipleSelection.length + ']条数据, 是否继续?',
+        '提示',
+        {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }
+      )
+        .then(() => {
+          var targetIds = ''
+          for (var i = 0; i < this.multipleSelection.length; i++) {
+            targetIds += this.multipleSelection[i].targetId + ','
+            console.log(targetIds)
+          }
+          this.doDelete(targetIds)
+        })
+        .catch(() => {})
+    },
+
     handleConfig() {
       //获取默认配置
       getConfig()
@@ -499,16 +581,17 @@ export default {
     // 展示高级搜索窗口
     showAdvanceSearchView() {
       this.advanceSearchViewVisible = !this.advanceSearchViewVisible;
-      this.emptyListQuery();
+     // this.emptyListQuery();
       if (!this.advanceSearchViewVisible) {
+        this.timeZone='';
         this.emptyListQuery();
-        this.getList();
+        this.getList(this.listQuery);
       }
     },
 
     //取消
-     handleClose(done) {
-       this.cancelImport()
+    handleClose(done) {
+      this.cancelImport();
     },
     cancelConfig() {
       this.configDialog = false;
