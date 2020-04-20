@@ -32,3 +32,12 @@ export function queryNum(data) {
       params:data
     })
   }
+
+  
+export function deleteNum(data) {
+  return request({
+    url: '/captureNum/deleteNum',
+    method: 'delete',
+    data
+  })
+}

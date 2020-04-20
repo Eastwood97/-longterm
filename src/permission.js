@@ -34,7 +34,7 @@ router.beforeEach((to, from, next) => {
           })
         }).catch(() => {
           store.dispatch('FedLogOut').then(() => {
-            Message.error('Verification failed, please login again')
+            Message.error('验证失败, 请重新登录')
             next({ path: '/login' })
           })
         })

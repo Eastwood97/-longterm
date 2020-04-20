@@ -3,10 +3,11 @@
     <!-- 查询和其他操作 -->
     <div class="filter-container" style="display:flex;justify-content:space-between">
       <div class="filter-item">
-        <el-input v-model="listQuery.imsi" clearable style="width: 200px;" placeholder="请输入imsi" />
+        <el-input v-model="listQuery.imsi" clearable style="width: 200px;" maxlength="15" placeholder="请输入imsi" />
         <el-date-picker
           v-model="listQuery.captureDay"
           type="date"
+          value-format="yyyy-MM-dd"
           placeholder="选择日期"
           :pickerOptions="pickerOptions2"
         ></el-date-picker>
@@ -16,7 +17,7 @@
     <ve-line :data="chartData"></ve-line>
     <div class="filter-container" style="display:flex;justify-content:space-between">
       <div class="filter-item">
-        <el-input v-model="listQuery2.imsi" clearable style="width: 200px;" placeholder="请输入imsi" />
+        <el-input v-model="listQuery2.imsi" clearable style="width: 200px;" maxlength="15" placeholder="请输入imsi" />
         <el-date-picker
           v-model="timeZone"
           type="daterange"
@@ -25,6 +26,7 @@
           range-separator="至"
           start-placeholder="开始日期"
           end-placeholder="结束日期"
+          value-format="yyyy-MM-dd"
           :picker-options="pickerOptions"
           @change="chooseTimeRange"
         ></el-date-picker>
@@ -37,7 +39,7 @@
 
 
 <script>
-import { getOneDay,getLongTime } from "@/api/captureNum";
+import { getOneDay, getLongTime } from "@/api/captureNum";
 export default {
   data: function() {
     return {
@@ -48,31 +50,35 @@ export default {
       },
       timeZone: "",
       pickerOptions: {
-              shortcuts: [{
-            text: '最近一周',
+        shortcuts: [
+          {
+            text: "最近一周",
             onClick(picker) {
               const end = new Date();
               const start = new Date();
               start.setTime(start.getTime() - 3600 * 1000 * 24 * 7);
-              picker.$emit('pick', [start, end]);
+              picker.$emit("pick", [start, end]);
             }
-          }, {
-            text: '最近一个月',
+          },
+          {
+            text: "最近一个月",
             onClick(picker) {
               const end = new Date();
               const start = new Date();
               start.setTime(start.getTime() - 3600 * 1000 * 24 * 30);
-              picker.$emit('pick', [start, end]);
+              picker.$emit("pick", [start, end]);
             }
-          }, {
-            text: '最近三个月',
+          },
+          {
+            text: "最近三个月",
             onClick(picker) {
               const end = new Date();
               const start = new Date();
               start.setTime(start.getTime() - 3600 * 1000 * 24 * 90);
-              picker.$emit('pick', [start, end]);
+              picker.$emit("pick", [start, end]);
             }
-          }],
+          }
+        ],
         disabledDate(time) {
           //return time.getTime() < Date.now() - 8.64e7;//设置选择今天以及今天之后的日
           return time.getTime() > Date.now(); //设置选择今天以及今天以前的日期
@@ -82,7 +88,7 @@ export default {
       },
       listQuery: {
         imsi: "",
-        captureDay: "",
+        captureDay: ""
       },
       listQuery2: {
         imsi: "",
@@ -92,12 +98,12 @@ export default {
       chartData: {
         columns: ["timeStamp", "existence"],
         rows: [
-          { timeStamp: "1/1", existence: 1 },
-          { timeStamp: "1/2", existence: 0 },
-          { timeStamp: "1/3", existence: 1 },
-          { timeStamp: "1/4", existence: 0 },
-          { timeStamp: "1/5", existence: 1 },
-          { timeStamp: "1/6", existence: 0 }
+          { timeStamp: "00:00:01", existence: 1 },
+          { timeStamp: "02:00:01", existence: 0 },
+          { timeStamp: "04:00:01", existence: 1 },
+          { timeStamp: "06:00:01", existence: 0 },
+          { timeStamp: "09:00:01", existence: 1 },
+          { timeStamp: "12:00:01", existence: 0 }
         ]
       },
       chartData2: {
@@ -128,23 +134,45 @@ export default {
           { hour: "22：00", count: 22 },
           { hour: "23：00", count: 29 }
         ]
+      },
+      rules: {
+        imsi: [
+          { required: true, message: "请输入imsi", trigger: "blur" }
+        ]
       }
     };
   },
   methods: {
-     handleFilter() {
+    handleFilter() {
+     if(this.listQuery.imsi==""||this.listQuery.captureDay==""){
+       this.$message({
+          message: '请输入imsi或日期',
+          type: 'warning'
+        });
+        return
+      }
       this.getchartData();
     },
-    getchartData(){
+    getchartData() {
       getOneDay(this.listQuery)
+        .then(respone => {
+          this.chartData.rows = respone.data.data.list;
+        })
+        .catch(err => {});
     },
-     handleFilter2() {
+    handleFilter2() {
       this.getchartData2();
     },
-    getchartData2(){
+    getchartData2() {
       getLongTime(this.listQuery2)
+        .then(response => {
+          for (let i = 0; i < 24; i++) {
+            this.chartData2.rows[i].count = response.data.data.list[i];
+          }
+        })
+        .catch(err => {});
     },
-     // 监听时间变化
+    // 监听时间变化
     chooseTimeRange(t) {
       if (t == "" || t == null) {
         this.listQuery2.startTime = "";
@@ -153,10 +181,10 @@ export default {
         this.listQuery2.startTime = t[0];
         this.listQuery2.endTime = t[1];
       }
-    },
-
+    }
   },
   created() {
+    this.getchartData2();
   }
 };
 </script>

@@ -6,6 +6,7 @@
         <el-input
           v-model="listQuery.imsi"
           clearable
+          maxlength="15"
           class="filter-item"
           style="width: 200px;"
           placeholder="请输入imsi"
@@ -43,7 +44,7 @@
       <el-row>
         <el-col :span="5">
           归属地:
-          <el-input v-model="listQuery.attribution" style="width: 130px" placeholder="请输入" />
+          <el-input v-model="listQuery.attribution" style="width: 130px" maxlength="15" placeholder="请输入" />
         </el-col>
         <el-col :span="10">
           时间范围:
@@ -87,7 +88,7 @@
         class-name="small-padding fixed-width"
       >
         <template slot-scope="scope">
-          <el-button type="danger" size="mini" @click="handleDelete(scope.$index, scope.row)">删除</el-button>
+          <el-button type="danger" size="mini"@click="deleteNumber(scope.row)">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -99,6 +100,7 @@
         :disabled="multipleSelection.length==0"
         type="danger"
         size="mini"
+        @click="deleteManyNumbers"
       >批量删除</el-button>
 
       <el-pagination
@@ -185,11 +187,11 @@
           </template>
         </el-form-item>
 
-        <el-form-item label="开始时间" prop="startTime">
+        <el-form-item label="开始时间" placeholder="请输入0到23的整数" prop="startTime">
           <el-input v-model="configForm.startTime" />
         </el-form-item>
 
-        <el-form-item label="结束时间" prop="endTime">
+        <el-form-item label="结束时间" placeholder="请输入0到23的整数" prop="endTime">
           <el-input v-model="configForm.endTime" />
         </el-form-item>
       </el-form>
@@ -243,7 +245,7 @@ import {
   getConfig,
   importNum
 } from "@/api/dashboard";
-import { queryNum } from "@/api/captureNum";
+import { queryNum ,deleteNum} from "@/api/captureNum";
 import { getToken } from "@/utils/auth";
 import Pagination from '@/components/Pagination' // Secondary package based on el-pagination
 export default {
@@ -353,7 +355,26 @@ export default {
         endTime: ""
       },
       downloadLoading: false,
-      rules: {}
+      rules: {
+        startTime: [
+          { required: true, message: "开始时间不能为空", trigger: "blur" },
+          {
+            required: true,
+            pattern: /^([0-9]|(1[0-3]|2[0-3]))$/,
+            message: "请输入0-23的整数",
+            trigger: "blur"
+          }
+        ],
+        endTime: [
+          { required: true, message: "结束时间不能为空", trigger: "blur" },
+          {
+            required: true,
+            pattern: /^([0-9]|(1[0-3]|2[0-3]))$/,
+            message: "请输入0-23的整数",
+            trigger: "blur"
+          }
+        ],
+      }
     };
   },
   computed: {
@@ -477,11 +498,11 @@ export default {
     // 分页查询
     handleFilter() {
       this.listQuery.page = 1;
-      this.getList(this.listQuery);
+      this.getList();
     },
 
-    getList(listQuery) {
-      queryNum(listQuery)
+    getList() {
+      queryNum(this.listQuery)
         .then(response => {
           this.list = response.data.data.list;
           this.total = response.data.data.total;
@@ -496,12 +517,12 @@ export default {
     },
      handleSizeChange(val) {
       this.listQuery.limit = val
-      this.getList(this.listQuery)
+      this.getList()
     },
 
     currentChange(page) {
       this.listQuery.page = page
-      this.getList(this.listQuery)
+      this.getList()
     },
      // 批量删除
     deleteManyNumbers() {
@@ -524,6 +545,7 @@ export default {
         })
         .catch(() => {})
     },
+  
 
     handleConfig() {
       //获取默认配置
@@ -546,7 +568,7 @@ export default {
     cancelSearch() {
       this.advanceSearchViewVisible = false;
       this.emptyListQuery();
-      this.getList(this.listQuery);
+      this.getList();
     },
     // 清空查询条件
     emptyListQuery() {
@@ -585,7 +607,7 @@ export default {
       if (!this.advanceSearchViewVisible) {
         this.timeZone='';
         this.emptyListQuery();
-        this.getList(this.listQuery);
+        this.getList();
       }
     },
 
@@ -673,10 +695,69 @@ export default {
     },
     closeWebSocket() {
       this.websocket.close();
-    }
+    },
+     // 单个删除
+    deleteNumber(row) {
+      this.$confirm(
+        "此操作将永久删除[" + row.imsi + "], 是否继续?",
+        "提示",
+        {
+          confirmButtonText: "确定",
+          cancelButtonText: "取消",
+          type: "warning"
+        }
+      )
+        .then(() => {
+          this.doDelete(row.id);
+        })
+        .catch(() => {});
+    },
+      // 批量删除
+    deleteManyNumbers() {
+      this.$confirm(
+        '此操作将删除[' + this.multipleSelection.length + ']条数据, 是否继续?',
+        '提示',
+        {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }
+      )
+        .then(() => {
+          var ids = ''
+          for (var i = 0; i < this.multipleSelection.length; i++) {
+            ids += this.multipleSelection[i].id + ','
+          }
+          this.doDelete(ids)
+        })
+        .catch(() => {})
+    },
+     // 执行删除
+    doDelete(ids) {
+      // this.tableLoading = true;
+      var _this = this;
+      deleteNum(ids)
+        .then(resp => {
+          // _this.tableLoading = false;
+          if (resp && resp.status == 200) {
+            this.$notify.success({
+              title: "成功",
+              message: "删除成功",
+              type: 'success'
+            });
+            _this.getList();
+          }
+        })
+        .catch(response => {
+          this.$notify.error({
+            title: "失败",
+            message: response.data.errmsg
+          });
+        });
+    },
   },
   created() {
-    this.getList(this.listQuery);
+    this.getList();
   }
 };
 </script>

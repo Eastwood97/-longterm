@@ -120,6 +120,15 @@ export default {
   },
   mounted() {},
   methods: {
+    handleSizeChange(val) {
+      this.listQuery.limit = val
+      this.getList()
+    },
+
+    currentChange(page) {
+      this.listQuery.page = page
+      this.getList()
+    },
     handleFilter() {
       this.listQuery.page = 1;
       this.getList();
