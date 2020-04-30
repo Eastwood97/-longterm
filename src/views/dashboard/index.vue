@@ -6,7 +6,7 @@
         <el-input
           v-model="listQuery.imsi"
           clearable
-          maxlength="15"
+          :maxlength="15"
           class="filter-item"
           style="width: 200px;"
           placeholder="请输入imsi"
@@ -26,14 +26,20 @@
         >高级搜索</el-button>
       </div>
       <div>
-        <el-button class="filter-item" type="primary" icon="el-icon-search" @click="handleConfig">配置</el-button>
         <el-button
           class="filter-item"
           type="primary"
-          icon="el-icon-search"
+          icon="el-icon-setting"
+          @click="handleConfig"
+        >配置</el-button>
+        <el-button
+          class="filter-item"
+          type="primary"
+          icon="el-icon-download"
           @click="handleImport"
           :loading="loading"
         >导入</el-button>
+        <el-button class="filter-item" type="primary" icon="el-icon-close" @click="handleDel">数据清洗</el-button>
       </div>
     </div>
     <!--高级搜索框-->
@@ -44,7 +50,12 @@
       <el-row>
         <el-col :span="5">
           归属地:
-          <el-input v-model="listQuery.attribution" style="width: 130px" maxlength="15" placeholder="请输入" />
+          <el-input
+            v-model="listQuery.attribution"
+            style="width: 130px"
+            :maxlength="15"
+            placeholder="请输入"
+          />
         </el-col>
         <el-col :span="10">
           时间范围:
@@ -88,11 +99,11 @@
         class-name="small-padding fixed-width"
       >
         <template slot-scope="scope">
-          <el-button type="danger" size="mini"@click="deleteNumber(scope.row)">删除</el-button>
+          <el-button type="danger" size="mini" @click="deleteNumber(scope.row)">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
-     <!-- 批量删除-->
+    <!-- 批量删除-->
 
     <div style="display: flex;justify-content: space-between;margin: 2px">
       <el-button
@@ -136,7 +147,7 @@
               ></el-option>
             </el-select>
           </template>
-          <el-button type="primary" @click="send1(1)" :disabled="isDisadled1">
+          <el-button type="primary" @click="send1(0)" :disabled="isDisadled1">
             <span v-show="show1">扫网</span>
             <span v-show="!show1" class="count">{{count}} s</span>
           </el-button>
@@ -152,7 +163,7 @@
               ></el-option>
             </el-select>
           </template>
-          <el-button type="primary" @click="send2(2)" :disabled="isDisadled2">
+          <el-button type="primary" @click="send2(1)" :disabled="isDisadled2">
             <span v-show="show2">扫网</span>
             <span v-show="!show2" class="count">{{count}} s</span>
           </el-button>
@@ -169,7 +180,7 @@
               ></el-option>
             </el-select>
           </template>
-          <el-button type="primary" @click="send3(3)" :disabled="isDisadled3">
+          <el-button type="primary" @click="send3(2)" :disabled="isDisadled3">
             <span v-show="show3">扫网</span>
             <span v-show="!show3" class="count">{{count}} s</span>
           </el-button>
@@ -187,12 +198,19 @@
           </template>
         </el-form-item>
 
-        <el-form-item label="开始时间" placeholder="请输入0到23的整数" prop="startTime">
-          <el-input v-model="configForm.startTime" />
+        <el-form-item label="开始时间" placeholder="请输入0到23的整数" prop="beginTime">
+          <el-input v-model="configForm.beginTime" />
         </el-form-item>
 
-        <el-form-item label="结束时间" placeholder="请输入0到23的整数" prop="endTime">
-          <el-input v-model="configForm.endTime" />
+        <el-form-item label="结束时间" placeholder="请输入0到23的整数" prop="overTime">
+          <el-input v-model="configForm.overTime" />
+        </el-form-item>
+        <el-form-item label="工作时间" placeholder="请输入0到23的整数" prop="workTime">
+          <el-input v-model="configForm.workTime" />
+        </el-form-item>
+
+        <el-form-item label="睡眠时间" placeholder="请输入0到23的整数" prop="sleepTime">
+          <el-input v-model="configForm.sleepTime" />
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
@@ -213,6 +231,7 @@
         <el-form-item label="开始时间" prop="startTime">
           <el-date-picker
             v-model="importForm.startTime"
+            value-format="yyyy-MM-dd"
             type="date"
             placeholder="选择日期"
             disabled="true"
@@ -222,6 +241,7 @@
         <el-form-item label="结束时间" prop="endTime">
           <el-date-picker
             v-model="importForm.endTime"
+            value-format="yyyy-MM-dd"
             type="date"
             placeholder="选择日期"
             :pickerOptions="pickerOptions2"
@@ -231,6 +251,42 @@
       <div slot="footer" class="dialog-footer">
         <el-button @click="cancelImport">取消</el-button>
         <el-button type="primary" @click="doImport">确定</el-button>
+      </div>
+    </el-dialog>
+
+    <el-dialog :title="'数据清洗'" :visible.sync="delDialog" :before-close="handleCloseDel">
+      <el-form
+        ref="delForm"
+        :rules="rules"
+        :model="delForm"
+        status-icon
+        label-position="left"
+        label-width="100px"
+        style="width: 400px; margin-left:50px;"
+      >
+        <el-form-item label="开始时间" prop="startTime">
+          <el-date-picker
+            v-model="delForm.startTime"
+            value-format="yyyy-MM-dd"
+            type="date"
+            placeholder="选择日期"
+            :pickerOptions="pickerOptions2"
+          ></el-date-picker>
+        </el-form-item>
+
+        <el-form-item label="结束时间" prop="endTime">
+          <el-date-picker
+            v-model="delForm.endTime"
+            value-format="yyyy-MM-dd"
+            type="date"
+            placeholder="选择日期"
+            :pickerOptions="pickerOptions2"
+          ></el-date-picker>
+        </el-form-item>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="cancelDel">取消</el-button>
+        <el-button type="primary" @click="deleteByTime">确定</el-button>
       </div>
     </el-dialog>
   </div>
@@ -245,15 +301,23 @@ import {
   getConfig,
   importNum
 } from "@/api/dashboard";
-import { queryNum ,deleteNum} from "@/api/captureNum";
+import { queryNum, deleteNum, cleanData } from "@/api/captureNum";
 import { getToken } from "@/utils/auth";
-import Pagination from '@/components/Pagination' // Secondary package based on el-pagination
+import Pagination from "@/components/Pagination"; // Secondary package based on el-pagination
 export default {
   components: {},
   data() {
+    let sleepTimeValidate = (rule, value, callback) => {
+      let sleepTime = value;
+      if (sleepTime <= 1440 && sleepTime >= 0) {
+        callback();
+      } else {
+        callback("请输入0-1440的整数(单位为分钟)");
+      }
+    };
     return {
       total: 0,
-       multipleSelection: [],
+      multipleSelection: [],
       isDisadled1: false,
       isDisadled2: false,
       isDisadled3: false,
@@ -313,8 +377,8 @@ export default {
       advanceSearchViewVisible: false,
       cmccArfcns: [
         {
-          label: 83950,
-          value: 83950
+          label: 38950,
+          value: 38950
         }
       ],
       cuccArfcns: [
@@ -342,21 +406,34 @@ export default {
       list: [],
       configDialog: false,
       importDialog: false,
+      delDialog: false,
       configForm: {
         cmccArfcn: "",
         cuccArfcn: "",
         ctccArfcn: "",
         power: "",
-        startTime: "",
-        endTime: ""
+        beginTime: "",
+        overTime: "",
+        workTime: "",
+        sleepTime: ""
       },
       importForm: {
-        startTime: "2020-3-1",
+        startTime: "2018-03-01",
+        endTime: ""
+      },
+      delForm: {
+        startTime: "",
         endTime: ""
       },
       downloadLoading: false,
       rules: {
         startTime: [
+          { required: true, message: "开始时间不能为空", trigger: "blur" }
+        ],
+        endTime: [
+          { required: true, message: "结束时间不能为空", trigger: "blur" }
+        ],
+        beginTime: [
           { required: true, message: "开始时间不能为空", trigger: "blur" },
           {
             required: true,
@@ -365,7 +442,7 @@ export default {
             trigger: "blur"
           }
         ],
-        endTime: [
+        overTime: [
           { required: true, message: "结束时间不能为空", trigger: "blur" },
           {
             required: true,
@@ -374,6 +451,26 @@ export default {
             trigger: "blur"
           }
         ],
+        workTime: [
+          { required: true, message: "范围30-180整数,单位秒", trigger: "blur" },
+          {
+            required: true,
+            pattern: /^([3-9]|[3-9]\d|1[0-7]\d|180)$/,
+            message: "请输入30-180的整数,单位秒",
+            trigger: "blur"
+          }
+        ],
+        sleepTime: [
+          {
+            required: true,
+            message: "请输入0-1440的整数(单位为分钟)",
+            trigger: "blur"
+          },
+          {
+            validator: sleepTimeValidate,
+            required: true
+          }
+        ]
       }
     };
   },
@@ -418,26 +515,49 @@ export default {
         type: "error"
       });
     },
+    deleteByTime() {
+      this.$refs["delForm"].validate(valid => {
+        if (valid) {
+          cleanData(this.delForm)
+            .then(res => {
+              console.log(res.data);
+            })
+            .catch(err => {
+            openFail("删除失败")
+            });
+            this.delDialog=false;
+        }
+      });
+    },
 
     //导入
     doImport() {
-      importNum(this.importForm)
-        .then(res => {})
-        .catch(err => {});
-      this.loading = false;
+      this.$refs["importForm"].validate(valid => {
+        if (valid) {
+          importNum(this.importForm)
+            .then(res => {})
+            .catch(err => {});
+          this.loading = true;
+          this.importDialog = false;
+        }
+      });
     },
     //配置
     setConfig() {
-      doconfig(this.configForm)
-        .then(res => {})
-        .catch(err => {});
-      this.configDialog = false;
+      this.$refs["delForm"].validate(valid => {
+        if (valid) {
+          doconfig(this.configForm)
+            .then(res => {})
+            .catch(err => {});
+          this.configDialog = false;
+        }
+      });
     },
 
     //扫网
     send1(mode) {
       this.isDisadled1 = this.isDisadled2 = this.isDisadled3 = true;
-      scanNet(mode);
+      this.scanNet(mode);
       if (!this.timer1) {
         this.count = this.TIME_COUNT;
         this.show1 = false;
@@ -455,7 +575,7 @@ export default {
     },
     send2(mode) {
       this.isDisadled1 = this.isDisadled2 = this.isDisadled3 = true;
-      scanNet(mode);
+      this.scanNet(mode);
       if (!this.timer2) {
         this.count = this.TIME_COUNT;
         this.show2 = false;
@@ -473,7 +593,7 @@ export default {
     },
     send3(mode) {
       this.isDisadled3 = this.isDisadled2 = this.isDisadled3 = true;
-      scanNet(mode);
+      this.scanNet(mode);
       if (!this.timer3) {
         this.count = this.TIME_COUNT;
         this.show3 = false;
@@ -507,7 +627,7 @@ export default {
           this.list = response.data.data.list;
           this.total = response.data.data.total;
           this.listLoading = false;
-          this.importForm.startTime=response.data.data.list[0].captureDay
+          this.importForm.startTime = response.data.data.list[0].captureDay;
         })
         .catch(() => {
           this.list = [];
@@ -515,37 +635,36 @@ export default {
           this.listLoading = false;
         });
     },
-     handleSizeChange(val) {
-      this.listQuery.limit = val
-      this.getList()
+    handleSizeChange(val) {
+      this.listQuery.limit = val;
+      this.getList();
     },
 
     currentChange(page) {
-      this.listQuery.page = page
-      this.getList()
+      this.listQuery.page = page;
+      this.getList();
     },
-     // 批量删除
+    // 批量删除
     deleteManyNumbers() {
       this.$confirm(
-        '此操作将删除[' + this.multipleSelection.length + ']条数据, 是否继续?',
-        '提示',
+        "此操作将删除[" + this.multipleSelection.length + "]条数据, 是否继续?",
+        "提示",
         {
-          confirmButtonText: '确定',
-          cancelButtonText: '取消',
-          type: 'warning'
+          confirmButtonText: "确定",
+          cancelButtonText: "取消",
+          type: "warning"
         }
       )
         .then(() => {
-          var targetIds = ''
+          var targetIds = "";
           for (var i = 0; i < this.multipleSelection.length; i++) {
-            targetIds += this.multipleSelection[i].targetId + ','
-            console.log(targetIds)
+            targetIds += this.multipleSelection[i].targetId + ",";
+            console.log(targetIds);
           }
-          this.doDelete(targetIds)
+          this.doDelete(targetIds);
         })
-        .catch(() => {})
+        .catch(() => {});
     },
-  
 
     handleConfig() {
       //获取默认配置
@@ -563,10 +682,17 @@ export default {
         this.$refs["importForm"].clearValidate();
       });
     },
+    handleDel() {
+      this.delDialog = "true";
+      this.$nextTick(() => {
+        this.$refs["delForm"].clearValidate();
+      });
+    },
 
     // 取消搜索
     cancelSearch() {
       this.advanceSearchViewVisible = false;
+      this.timeZone=""
       this.emptyListQuery();
       this.getList();
     },
@@ -603,9 +729,9 @@ export default {
     // 展示高级搜索窗口
     showAdvanceSearchView() {
       this.advanceSearchViewVisible = !this.advanceSearchViewVisible;
-     // this.emptyListQuery();
+      // this.emptyListQuery();
       if (!this.advanceSearchViewVisible) {
-        this.timeZone='';
+        this.timeZone = "";
         this.emptyListQuery();
         this.getList();
       }
@@ -615,12 +741,20 @@ export default {
     handleClose(done) {
       this.cancelImport();
     },
+    handleCloseDel(done) {
+      this.cancelDel();
+    },
     cancelConfig() {
       this.configDialog = false;
     },
     cancelImport() {
       this.importDialog = false;
       this.importForm.endTime = "";
+    },
+    cancelDel() {
+      this.delDialog = false;
+      this.delForm.startTime = "";
+      this.delForm.endTime = "";
     },
     initWebSocket() {
       // 连接错误
@@ -651,27 +785,40 @@ export default {
 
       var data = JSON.parse(event.data);
       // alert('服务端返回：' + data.regcognition.compareScore)
+      if (data.state == 1) {
+        this.configForm.cmccArfcn = data.msg.cmccArfcn;
+        this.configForm.ctccArfcn = data.msg.ctccArfcn;
+        this.configForm.cuccArfcn = data.msg.cuccArfcn;
+        this.configForm.beginTime = data.msg.beginTime;
+        this.configForm.overTime = data.msg.overTime;
+        this.configForm.power = data.msg.power;
+        this.configForm.workTime = data.msg.workTime;
+        this.configForm.sleepTime = data.msg.sleepTime;
+        // localStorage.setItem("workTime", this.configForm.workTime);
+        //  localStorage.setItem("sleepTime", this.configForm.sleepTime)
+      }
 
       if (data.state == 2) {
         this.openSuccess(data.msg);
       }
       if (data.state == 3) {
-        switch (data.plmn) {
-          case "1":
-            this.cuccArfcns = data.arfcnResult;
+        switch (data.msg.plmn) {
+          case "0":
+            this.cmccArfcns = data.msg.arfcnResultList;
             break; //跳出switch语句
-          case "2":
-            this.cmccArfcns = data.arfcnsarfcnResult;
+          case "1":
+            this.cuccArfcns = data.msg.arfcnResultList;
             break;
-          case "3":
-            this.ctccArfcns = data.arfcnResult;
+          case "2":
+            this.ctccArfcns = data.msg.arfcnResultList;
             break;
         }
-        this.openSuccess(data.msg);
+        this.openSuccess("扫网成功");
       }
       if (data.state == 4) {
         this.openSuccess(data.msg);
-        this.loading = true;
+        this.loading = false;
+        this.getList();
       }
       if (data.state == -1) {
         this.openFail(data.msg);
@@ -696,10 +843,22 @@ export default {
     closeWebSocket() {
       this.websocket.close();
     },
-     // 单个删除
+    // 单个删除
     deleteNumber(row) {
+      this.$confirm("此操作将永久删除[" + row.imsi + "], 是否继续?", "提示", {
+        confirmButtonText: "确定",
+        cancelButtonText: "取消",
+        type: "warning"
+      })
+        .then(() => {
+          this.doDelete(row.id);
+        })
+        .catch(() => {});
+    },
+    // 批量删除
+    deleteManyNumbers() {
       this.$confirm(
-        "此操作将永久删除[" + row.imsi + "], 是否继续?",
+        "此操作将删除[" + this.multipleSelection.length + "]条数据, 是否继续?",
         "提示",
         {
           confirmButtonText: "确定",
@@ -708,31 +867,15 @@ export default {
         }
       )
         .then(() => {
-          this.doDelete(row.id);
+          var ids = "";
+          for (var i = 0; i < this.multipleSelection.length; i++) {
+            ids += this.multipleSelection[i].id + ",";
+          }
+          this.doDelete(ids);
         })
         .catch(() => {});
     },
-      // 批量删除
-    deleteManyNumbers() {
-      this.$confirm(
-        '此操作将删除[' + this.multipleSelection.length + ']条数据, 是否继续?',
-        '提示',
-        {
-          confirmButtonText: '确定',
-          cancelButtonText: '取消',
-          type: 'warning'
-        }
-      )
-        .then(() => {
-          var ids = ''
-          for (var i = 0; i < this.multipleSelection.length; i++) {
-            ids += this.multipleSelection[i].id + ','
-          }
-          this.doDelete(ids)
-        })
-        .catch(() => {})
-    },
-     // 执行删除
+    // 执行删除
     doDelete(ids) {
       // this.tableLoading = true;
       var _this = this;
@@ -743,7 +886,7 @@ export default {
             this.$notify.success({
               title: "成功",
               message: "删除成功",
-              type: 'success'
+              type: "success"
             });
             _this.getList();
           }
@@ -754,7 +897,7 @@ export default {
             message: response.data.errmsg
           });
         });
-    },
+    }
   },
   created() {
     this.getList();

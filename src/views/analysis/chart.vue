@@ -98,12 +98,13 @@ export default {
       chartData: {
         columns: ["timeStamp", "existence"],
         rows: [
-          { timeStamp: "00:00:01", existence: 1 },
-          { timeStamp: "02:00:01", existence: 0 },
-          { timeStamp: "04:00:01", existence: 1 },
-          { timeStamp: "06:00:01", existence: 0 },
-          { timeStamp: "09:00:01", existence: 1 },
-          { timeStamp: "12:00:01", existence: 0 }
+          { timeStamp: "00:00:01", existence: 1, imsi2:1},
+          { timeStamp: "02:00:01", existence: 0 ,imsi2:1},
+          { timeStamp: "04:00:01", existence: 1 ,imsi2:0},
+          { timeStamp: "06:00:01", existence: 0 ,imsi2:0},
+          { timeStamp: "09:00:01", existence: 1 ,imsi2:0},
+          { timeStamp: "12:00:01", existence: 1,imsi2:1},
+          { timeStamp: "13:00:01", existence: 1,imsi2:1}
         ]
       },
       chartData2: {

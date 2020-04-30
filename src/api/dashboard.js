@@ -2,7 +2,7 @@ import request from '@/utils/request'
 
 export function getFrequencyPoints(query) {
   return request({
-    url: '/devCommunication/scanNet',
+    url: '/devCommunication/scanNet?mode='+query,
     method: 'get',
     params: query
   })

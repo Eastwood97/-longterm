@@ -30,7 +30,7 @@
     >
       <el-table-column type="index" :index="indexMethod" label="id" min-width="100"></el-table-column>
       <el-table-column align="center" label="imsi" min-width="180px" prop="imsi" />
-      <el-table-column align="center" label="抓拍时间" min-width="180px" prop="captureDateTime" />
+      <el-table-column align="center" label="最近取号时间" min-width="180px" prop="captureDateTime" />
       <el-table-column align="center" label="次数" min-width="180px" prop="count" />
       <el-table-column align="center" label="归属地" min-width="180px" prop="attribution" />
     </el-table>

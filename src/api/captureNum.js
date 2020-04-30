@@ -41,3 +41,11 @@ export function deleteNum(data) {
     data
   })
 }
+
+export function cleanData(data) {
+  return request({
+    url: '/captureNum/deleteNumByTime',
+    method: 'delete',
+    data
+  })
+}
