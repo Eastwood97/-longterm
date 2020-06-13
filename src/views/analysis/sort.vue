@@ -20,6 +20,7 @@
     </div>
     <!-- 查询结果 -->
     <el-table
+      @row-click="rowClick"
       v-loading="listLoading"
       :data="list"
       element-loading-text="正在查询中。。。"
@@ -90,7 +91,7 @@ export default {
             }
           }
         ],
-         disabledDate(time) {
+        disabledDate(time) {
           //return time.getTime() < Date.now() - 8.64e7;//设置选择今天以及今天之后的日
           return time.getTime() > Date.now(); //设置选择今天以及今天以前的日期
           //return time.getTime() < Date.now();//设置选择今天之后的日期（不能选择当天时间）
@@ -121,13 +122,17 @@ export default {
   mounted() {},
   methods: {
     handleSizeChange(val) {
-      this.listQuery.limit = val
-      this.getList()
+      this.listQuery.limit = val;
+      this.getList();
     },
 
+    rowClick(val) {
+      console.log(val.imsi);
+      this.$router.push({name:'chart',query: {id:val}})
+    },
     currentChange(page) {
-      this.listQuery.page = page
-      this.getList()
+      this.listQuery.page = page;
+      this.getList();
     },
     handleFilter() {
       this.listQuery.page = 1;

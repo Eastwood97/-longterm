@@ -3,7 +3,13 @@
     <!-- 查询和其他操作 -->
     <div class="filter-container" style="display:flex;justify-content:space-between">
       <div class="filter-item">
-        <el-input v-model="listQuery.imsi" clearable style="width: 200px;" maxlength="15" placeholder="请输入imsi" />
+        <el-input
+          v-model="listQuery.imsi"
+          clearable
+          style="width: 200px;"
+          maxlength="15"
+          placeholder="请输入imsi"
+        />
         <el-date-picker
           v-model="listQuery.captureDay"
           type="date"
@@ -17,7 +23,13 @@
     <ve-line :data="chartData"></ve-line>
     <div class="filter-container" style="display:flex;justify-content:space-between">
       <div class="filter-item">
-        <el-input v-model="listQuery2.imsi" clearable style="width: 200px;" maxlength="15" placeholder="请输入imsi" />
+        <el-input
+          v-model="listQuery2.imsi"
+          clearable
+          style="width: 200px;"
+          maxlength="15"
+          placeholder="请输入imsi"
+        />
         <el-date-picker
           v-model="timeZone"
           type="daterange"
@@ -98,13 +110,13 @@ export default {
       chartData: {
         columns: ["timeStamp", "existence"],
         rows: [
-          { timeStamp: "00:00:01", existence: 1, imsi2:1},
-          { timeStamp: "02:00:01", existence: 0 ,imsi2:1},
-          { timeStamp: "04:00:01", existence: 1 ,imsi2:0},
-          { timeStamp: "06:00:01", existence: 0 ,imsi2:0},
-          { timeStamp: "09:00:01", existence: 1 ,imsi2:0},
-          { timeStamp: "12:00:01", existence: 1,imsi2:1},
-          { timeStamp: "13:00:01", existence: 1,imsi2:1}
+          { timeStamp: "00:00:01", existence: 1, imsi2: 1 },
+          { timeStamp: "02:00:01", existence: 0, imsi2: 1 },
+          { timeStamp: "04:00:01", existence: 1, imsi2: 0 },
+          { timeStamp: "06:00:01", existence: 0, imsi2: 0 },
+          { timeStamp: "09:00:01", existence: 1, imsi2: 0 },
+          { timeStamp: "12:00:01", existence: 1, imsi2: 1 },
+          { timeStamp: "13:00:01", existence: 1, imsi2: 1 }
         ]
       },
       chartData2: {
@@ -137,24 +149,24 @@ export default {
         ]
       },
       rules: {
-        imsi: [
-          { required: true, message: "请输入imsi", trigger: "blur" }
-        ]
+        imsi: [{ required: true, message: "请输入imsi", trigger: "blur" }]
       }
     };
   },
   methods: {
     handleFilter() {
-     if(this.listQuery.imsi==""||this.listQuery.captureDay==""){
-       this.$message({
-          message: '请输入imsi或日期',
-          type: 'warning'
+      if (this.listQuery.imsi == "" || this.listQuery.captureDay == "") {
+        this.$message({
+          message: "请输入imsi或日期",
+          type: "warning"
         });
-        return
+        return;
       }
+      console.log("调用查询方法");
       this.getchartData();
     },
     getchartData() {
+      console.log("调用api.js");
       getOneDay(this.listQuery)
         .then(respone => {
           this.chartData.rows = respone.data.data.list;
@@ -182,10 +194,28 @@ export default {
         this.listQuery2.startTime = t[0];
         this.listQuery2.endTime = t[1];
       }
-    }
+    },
+    formatDate: function (value) {
+        let date = new Date(value);
+        let y = date.getFullYear();
+        let MM = date.getMonth() + 1;
+        MM = MM < 10 ? ('0' + MM) : MM;
+        let d = date.getDate();
+        d = d < 10 ? ('0' + d) : d;
+        // let h = date.getHours();
+        // h = h < 10 ? ('0' + h) : h;
+        // let m = date.getMinutes();
+        // m = m < 10 ? ('0' + m) : m;
+        // let s = date.getSeconds();
+        // s = s < 10 ? ('0' + s) : s;
+        return y + '-' + MM + '-' + d ;
+      }
   },
   created() {
     this.getchartData2();
+    this.listQuery.imsi = this.listQuery2.imsi = this.$route.query.id.imsi;
+    this.listQuery.captureDay = this.formatDate(this.$route.query.id.captureDateTime);
+    this.getchartData();
   }
 };
 </script>

@@ -43,7 +43,7 @@ export const constantRouterMap = [
       meta: { title: '首页', icon: 'dashboard', noCache: true }
     }]
   },
- 
+
 ]
 
 export default new Router({
@@ -53,7 +53,7 @@ export default new Router({
 })
 
 export const asyncRouterMap = [
-  { path: '*', redirect: '/404', hidden: true },
+
   {
     path: '/analysis',
     component: Layout,
@@ -62,7 +62,8 @@ export const asyncRouterMap = [
     name: 'analysis',
     meta: {
       title: '数据分析',
-      icon: 'chart'},
+      icon: 'chart'
+    },
     children: [{
       path: 'sort',
       component: _import('analysis/sort'),
@@ -75,5 +76,6 @@ export const asyncRouterMap = [
       name: 'chart',
       meta: { title: '图表统计', noCache: true }
     }]
-  }
+  },
+  { path: '*', redirect: '/404', hidden: true },
 ]

@@ -32,13 +32,13 @@
           icon="el-icon-setting"
           @click="handleConfig"
         >配置</el-button>
-        <el-button
+        <!-- <el-button
           class="filter-item"
           type="primary"
           icon="el-icon-download"
           @click="handleImport"
           :loading="loading"
-        >导入</el-button>
+        >导入</el-button> -->
         <el-button class="filter-item" type="primary" icon="el-icon-close" @click="handleDel">数据清洗</el-button>
       </div>
     </div>
@@ -136,6 +136,19 @@
         label-width="100px"
         style="width: 400px; margin-left:50px;"
       >
+        <el-form-item label="设备" prop="devId">
+          <template>
+            <el-select v-model="configForm.devId" filterable placeholder="请选择" @change="changeDev">
+              <el-option
+                v-for="item in devIds"
+                :key="item.value"
+                :label="item.label"
+                :value="item.value"
+              ></el-option>
+            </el-select>
+          </template>
+        </el-form-item>
+
         <el-form-item label="移动" prop="cmccArfcn">
           <template>
             <el-select v-model="configForm.cmccArfcn" filterable placeholder="请选择">
@@ -143,7 +156,7 @@
                 v-for="item in cmccArfcns"
                 :key="item.label"
                 :label="item.label"
-                :value="item.value2"
+                :value="item.value"
               ></el-option>
             </el-select>
           </template>
@@ -159,7 +172,7 @@
                 v-for="item in cuccArfcns"
                 :key="item.label"
                 :label="item.label"
-                :value="item.value2"
+                :value="item.value"
               ></el-option>
             </el-select>
           </template>
@@ -176,7 +189,7 @@
                 v-for="item in ctccArfcns"
                 :key="item.label"
                 :label="item.label"
-                :value="item.value2"
+                :value="item.value"
               ></el-option>
             </el-select>
           </template>
@@ -186,7 +199,7 @@
           </el-button>
         </el-form-item>
 
-        <el-form-item label="功率" prop="isdn">
+        <el-form-item label="功率" prop="power">
           <template>
             <el-select v-model="configForm.power" filterable placeholder="请选择">
               <el-option label="一档" value="1" />
@@ -205,12 +218,14 @@
         <el-form-item label="结束时间" placeholder="请输入0到23的整数" prop="overTime">
           <el-input v-model="configForm.overTime" />
         </el-form-item>
-        <el-form-item label="工作时间" placeholder="请输入0到23的整数" prop="workTime">
-          <el-input v-model="configForm.workTime" />
+        <el-form-item label="工作时间" prop="workTime">
+          <el-input v-model="configForm.workTime" placeholder="范围30-180整数,单位秒" />
+          <div class="el-form-item__error">(单位：秒)</div>
         </el-form-item>
 
         <el-form-item label="睡眠时间" placeholder="请输入0到23的整数" prop="sleepTime">
-          <el-input v-model="configForm.sleepTime" />
+          <el-input v-model="configForm.sleepTime" placeholder="请输入0-1440的整数(单位为分钟)" />
+          <div class="el-form-item__error">(单位：分钟)</div>
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
@@ -218,7 +233,7 @@
         <el-button type="primary" @click="setConfig">确定</el-button>
       </div>
     </el-dialog>
-    <el-dialog :title="'导入'" :visible.sync="importDialog" :before-close="handleClose">
+    <!-- <el-dialog :title="'导入'" :visible.sync="importDialog" :before-close="handleClose">
       <el-form
         ref="importForm"
         :rules="rules"
@@ -252,7 +267,7 @@
         <el-button @click="cancelImport">取消</el-button>
         <el-button type="primary" @click="doImport">确定</el-button>
       </div>
-    </el-dialog>
+    </el-dialog>-->
 
     <el-dialog :title="'数据清洗'" :visible.sync="delDialog" :before-close="handleCloseDel">
       <el-form
@@ -333,7 +348,7 @@ export default {
       loading: false,
       pickerOptions2: {
         disabledDate(time) {
-          return time.getTime() > Date.now(); //设置选择今天以及今天以前的日期
+          return time.getTime() > Date.now() + 8.64e7; //设置选择今天以及今天以前的日期
         }
       },
       pickerOptions: {
@@ -368,7 +383,7 @@ export default {
         ],
         disabledDate(time) {
           //return time.getTime() < Date.now() - 8.64e7;//设置选择今天以及今天之后的日
-          return time.getTime() > Date.now(); //设置选择今天以及今天以前的日期
+          return time.getTime() > Date.now() + 8.64e7; //设置选择今天以及今天以前的日期
           //return time.getTime() < Date.now();//设置选择今天之后的日期（不能选择当天时间）
           //  return time.getTime() > Date.now()-1-8.64e7||time.getTime() == Date.now()-1-8.64e7;//设置选择今天之前的日期（不能选择当天）
         }
@@ -389,9 +404,20 @@ export default {
       ],
       ctccArfcns: [
         {
-          label: 1285,
-          value: 1285
+          label: 1825,
+          value: 1825
         }
+      ],
+      devIds:[
+        {
+          label: '一号设备',
+          value: 0
+        },
+        {
+          label: '二号设备',
+          value: 1
+        }
+
       ],
 
       listQuery: {
@@ -405,9 +431,10 @@ export default {
       timeZone: "",
       list: [],
       configDialog: false,
-      importDialog: false,
+      // importDialog: false,
       delDialog: false,
       configForm: {
+        devId:0,
         cmccArfcn: "",
         cuccArfcn: "",
         ctccArfcn: "",
@@ -417,10 +444,10 @@ export default {
         workTime: "",
         sleepTime: ""
       },
-      importForm: {
-        startTime: "2018-03-01",
-        endTime: ""
-      },
+      // importForm: {
+      //   startTime: "2018-03-01",
+      //   endTime: ""
+      // },
       delForm: {
         startTime: "",
         endTime: ""
@@ -523,28 +550,36 @@ export default {
               console.log(res.data);
             })
             .catch(err => {
-            openFail("删除失败")
+              openFail("删除失败");
             });
-            this.delDialog=false;
+          this.delDialog = false;
         }
       });
     },
 
-    //导入
-    doImport() {
-      this.$refs["importForm"].validate(valid => {
-        if (valid) {
-          importNum(this.importForm)
-            .then(res => {})
-            .catch(err => {});
-          this.loading = true;
-          this.importDialog = false;
-        }
-      });
+    changeDev(){
+      getConfig(this.configForm.devId)
+        .then(res => {})
+        .catch(err => {});
+
     },
+
+    //导入
+    // doImport() {
+    //   this.$refs["importForm"].validate(valid => {
+    //     if (valid) {
+    //       importNum(this.importForm)
+    //         .then(res => {})
+    //         .catch(err => {});
+    //       this.loading = true;
+    //       this.importDialog = false;
+    //     }
+    //   });
+    // },
     //配置
     setConfig() {
-      this.$refs["delForm"].validate(valid => {
+      console.log(this.configForm.cmccArfcn);
+      this.$refs["configForm"].validate(valid => {
         if (valid) {
           doconfig(this.configForm)
             .then(res => {})
@@ -668,7 +703,7 @@ export default {
 
     handleConfig() {
       //获取默认配置
-      getConfig()
+      getConfig(this.configForm.devId)
         .then(res => {})
         .catch(err => {});
       this.configDialog = true;
@@ -692,7 +727,7 @@ export default {
     // 取消搜索
     cancelSearch() {
       this.advanceSearchViewVisible = false;
-      this.timeZone=""
+      this.timeZone = "";
       this.emptyListQuery();
       this.getList();
     },

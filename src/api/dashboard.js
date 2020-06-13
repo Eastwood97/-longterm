@@ -25,10 +25,11 @@ export function importNum(data) {
   })
 }
 
-export function getConfig() {
+export function getConfig(data) {
   return request({
-    url: '/devCommunication/getConfig',
+    url: '/devCommunication/getConfig?devId='+data,
     method:'get',
+    data
   })
 }
 
