@@ -38,7 +38,7 @@
           icon="el-icon-download"
           @click="handleImport"
           :loading="loading"
-        >导入</el-button> -->
+        >导入</el-button>-->
         <el-button class="filter-item" type="primary" icon="el-icon-close" @click="handleDel">数据清洗</el-button>
       </div>
     </div>
@@ -88,10 +88,12 @@
       @selection-change="handleSelectionChange"
     >
       <el-table-column type="selection" min-width="50" />
-      <el-table-column type="index" :index="indexMethod" label="id" min-width="100"></el-table-column>
-      <el-table-column align="center" label="imsi" min-width="180px" prop="imsi" />
-      <el-table-column align="center" label="抓拍时间" min-width="180px" prop="captureDateTime" />
+      <el-table-column type="index" :index="indexMethod" label="id"/>
+      <el-table-column align="center" label="imsi" min-width="150px" prop="imsi" />
+      <el-table-column align="center" label="抓拍时间" min-width="150px" prop="captureDateTime" />
       <el-table-column align="center" label="归属地" min-width="180px" prop="attribution" />
+       <el-table-column align="center" label="来源" min-width="100px" prop="from"  :formatter="stateFormat"/>
+
       <el-table-column
         align="center"
         label="操作"
@@ -138,7 +140,14 @@
       >
         <el-form-item label="设备" prop="devId">
           <template>
-            <el-select v-model="configForm.devId" filterable placeholder="请选择" @change="changeDev">
+            <el-select
+              allow-create
+              default-first-option
+              v-model="configForm.devId"
+              filterable
+              placeholder="请选择"
+              @change="changeDev"
+            >
               <el-option
                 v-for="item in devIds"
                 :key="item.value"
@@ -151,7 +160,13 @@
 
         <el-form-item label="移动" prop="cmccArfcn">
           <template>
-            <el-select v-model="configForm.cmccArfcn" filterable placeholder="请选择">
+            <el-select
+              allow-create
+              default-first-option
+              v-model="configForm.cmccArfcn"
+              filterable
+              placeholder="请选择"
+            >
               <el-option
                 v-for="item in cmccArfcns"
                 :key="item.label"
@@ -167,7 +182,13 @@
         </el-form-item>
         <el-form-item label="联通" prop="cuccArfcn">
           <template>
-            <el-select v-model="configForm.cuccArfcn" filterable placeholder="请选择">
+            <el-select
+              allow-create
+              default-first-option
+              v-model="configForm.cuccArfcn"
+              filterable
+              placeholder="请选择"
+            >
               <el-option
                 v-for="item in cuccArfcns"
                 :key="item.label"
@@ -184,7 +205,13 @@
 
         <el-form-item label="电信" prop="ctccArfcn">
           <template>
-            <el-select v-model="configForm.ctccArfcn" filterable placeholder="请选择">
+            <el-select
+              allow-create
+              default-first-option
+              v-model="configForm.ctccArfcn"
+              filterable
+              placeholder="请选择"
+            >
               <el-option
                 v-for="item in ctccArfcns"
                 :key="item.label"
@@ -211,12 +238,12 @@
           </template>
         </el-form-item>
 
-        <el-form-item label="开始时间" placeholder="请输入0到23的整数" prop="beginTime">
-          <el-input v-model="configForm.beginTime" />
+        <el-form-item label="开始时间" prop="beginTime">
+          <el-input v-model="configForm.beginTime" placeholder="请输入0到23的整数" />
         </el-form-item>
 
-        <el-form-item label="结束时间" placeholder="请输入0到23的整数" prop="overTime">
-          <el-input v-model="configForm.overTime" />
+        <el-form-item label="结束时间" prop="overTime">
+          <el-input v-model="configForm.overTime" placeholder="请输入0到23的整数" />
         </el-form-item>
         <el-form-item label="工作时间" prop="workTime">
           <el-input v-model="configForm.workTime" placeholder="范围30-180整数,单位秒" />
@@ -314,7 +341,8 @@ import {
   getFrequencyPoints,
   doconfig,
   getConfig,
-  importNum
+  importNum,
+  reboot
 } from "@/api/dashboard";
 import { queryNum, deleteNum, cleanData } from "@/api/captureNum";
 import { getToken } from "@/utils/auth";
@@ -336,7 +364,7 @@ export default {
       isDisadled1: false,
       isDisadled2: false,
       isDisadled3: false,
-      TIME_COUNT: 12,
+      TIME_COUNT: 32,
       show1: true, // 初始启用按钮
       count: "", // 初始化次数
       timer1: null,
@@ -408,16 +436,15 @@ export default {
           value: 1825
         }
       ],
-      devIds:[
+      devIds: [
         {
-          label: '一号设备',
+          label: "一号设备",
           value: 0
         },
         {
-          label: '二号设备',
+          label: "二号设备",
           value: 1
         }
-
       ],
 
       listQuery: {
@@ -428,13 +455,17 @@ export default {
         page: 1,
         limit: 10
       },
+      scanParam: {
+        mode: undefined,
+        devId: undefined
+      },
       timeZone: "",
       list: [],
       configDialog: false,
       // importDialog: false,
       delDialog: false,
       configForm: {
-        devId:0,
+        devId: 0,
         cmccArfcn: "",
         cuccArfcn: "",
         ctccArfcn: "",
@@ -528,6 +559,13 @@ export default {
     this.onbeforeunload();
   },
   methods: {
+    stateFormat(row){
+      if(row.from==0){
+        return "一号设备"
+      }else{
+        return "二号设备"
+      }
+    },
     openSuccess(msg) {
       this.$notify({
         title: "成功",
@@ -557,11 +595,21 @@ export default {
       });
     },
 
-    changeDev(){
+    changeDev() {
+      this.emptyConfigParam();
       getConfig(this.configForm.devId)
         .then(res => {})
         .catch(err => {});
-
+    },
+    emptyConfigParam() {
+      (this.configForm.cmccArfcn = ""),
+        (this.configForm.cuccArfcn = ""),
+        (this.configForm.ctccArfcn = ""),
+        (this.configForm.power = ""),
+        (this.configForm.beginTime = ""),
+        (this.configForm.overTime = ""),
+        (this.configForm.workTime = ""),
+        (this.configForm.sleepTime = "");
     },
 
     //导入
@@ -627,7 +675,7 @@ export default {
       }
     },
     send3(mode) {
-      this.isDisadled3 = this.isDisadled2 = this.isDisadled3 = true;
+      this.isDisadled1 = this.isDisadled2 = this.isDisadled3 = true;
       this.scanNet(mode);
       if (!this.timer3) {
         this.count = this.TIME_COUNT;
@@ -639,13 +687,15 @@ export default {
             this.show3 = true;
             clearInterval(this.timer3); // 清除定时器
             this.timer3 = null;
-            this.isDisadled3 = this.isDisadled2 = this.isDisadled3 = false;
+            this.isDisadled1 = this.isDisadled2 = this.isDisadled3 = false;
           }
         }, 1000);
       }
     },
     scanNet(mode) {
-      getFrequencyPoints(mode)
+      this.scanParam.mode = mode;
+      this.scanParam.devId = this.configForm.devId;
+      getFrequencyPoints(this.scanParam)
         .then(Response => {})
         .catch(err => {});
     },
@@ -662,7 +712,7 @@ export default {
           this.list = response.data.data.list;
           this.total = response.data.data.total;
           this.listLoading = false;
-          this.importForm.startTime = response.data.data.list[0].captureDay;
+          // this.importForm.startTime = response.data.data.list[0].captureDay;
         })
         .catch(() => {
           this.list = [];
@@ -820,54 +870,114 @@ export default {
 
       var data = JSON.parse(event.data);
       // alert('服务端返回：' + data.regcognition.compareScore)
-      if (data.state == 1) {
-        this.configForm.cmccArfcn = data.msg.cmccArfcn;
-        this.configForm.ctccArfcn = data.msg.ctccArfcn;
-        this.configForm.cuccArfcn = data.msg.cuccArfcn;
-        this.configForm.beginTime = data.msg.beginTime;
-        this.configForm.overTime = data.msg.overTime;
-        this.configForm.power = data.msg.power;
-        this.configForm.workTime = data.msg.workTime;
-        this.configForm.sleepTime = data.msg.sleepTime;
-        // localStorage.setItem("workTime", this.configForm.workTime);
-        //  localStorage.setItem("sleepTime", this.configForm.sleepTime)
-      }
+      switch (data.state) {
+        case 1: {
+          this.configForm.cmccArfcn = data.msg.cmccArfcn;
+          this.configForm.ctccArfcn = data.msg.ctccArfcn;
+          this.configForm.cuccArfcn = data.msg.cuccArfcn;
+          this.configForm.beginTime = data.msg.beginTime;
+          this.configForm.overTime = data.msg.overTime;
+          this.configForm.power = data.msg.power;
+          this.configForm.workTime = data.msg.workTime;
+          this.configForm.sleepTime = data.msg.sleepTime;
 
-      if (data.state == 2) {
-        this.openSuccess(data.msg);
-      }
-      if (data.state == 3) {
-        switch (data.msg.plmn) {
-          case "0":
-            this.cmccArfcns = data.msg.arfcnResultList;
-            break; //跳出switch语句
-          case "1":
-            this.cuccArfcns = data.msg.arfcnResultList;
-            break;
-          case "2":
-            this.ctccArfcns = data.msg.arfcnResultList;
-            break;
+          break;
         }
-        this.openSuccess("扫网成功");
+        case 2: {
+          this.openSuccess(data.msg);
+          setTimeout(function() {
+            reboot(data.devId)
+              .then(response => {})
+              .catch(() => {});
+          }, 9000);
+          break;
+        }
+        case 3: {
+          switch (data.msg.plmn) {
+            case "0":
+              this.cmccArfcns = data.msg.arfcnResultList;
+              break; //跳出switch语句
+            case "1":
+              this.cuccArfcns = data.msg.arfcnResultList;
+              break;
+            case "2":
+              this.ctccArfcns = data.msg.arfcnResultList;
+              break;
+          }
+          this.openSuccess("扫网成功");
+          this.count = 0;
+          break;
+        }
+        case 4: {
+          this.openSuccess(data.msg);
+          this.loading = false;
+          this.getList();
+          break;
+        }
+        case -4: {
+          this.openFail(data.msg);
+          this.loading = true;
+          break;
+        }
+        case 5: {
+          break;
+        }
+        case -5: {
+          break;
+        }
+        default: {
+          this.openFail(data.msg);
+          break;
+        }
       }
-      if (data.state == 4) {
-        this.openSuccess(data.msg);
-        this.loading = false;
-        this.getList();
-      }
-      if (data.state == -1) {
-        this.openFail(data.msg);
-      }
-      if (data.state == -2) {
-        this.openFail(data.msg);
-      }
-      if (data.state == -3) {
-        this.openFail(data.msg);
-      }
-      if (data.state == -4) {
-        this.openFail(data.msg);
-        this.loading = true;
-      }
+      // if (data.state == 1) {
+      //   this.configForm.cmccArfcn = data.msg.cmccArfcn;
+      //   this.configForm.ctccArfcn = data.msg.ctccArfcn;
+      //   this.configForm.cuccArfcn = data.msg.cuccArfcn;
+      //   this.configForm.beginTime = data.msg.beginTime;
+      //   this.configForm.overTime = data.msg.overTime;
+      //   this.configForm.power = data.msg.power;
+      //   this.configForm.workTime = data.msg.workTime;
+      //   this.configForm.sleepTime = data.msg.sleepTime;
+      //   // localStorage.setItem("workTime", this.configForm.workTime);
+      //   //  localStorage.setItem("sleepTime", this.configForm.sleepTime)
+      // }
+
+      // if (data.state == 2) {
+      //   this.openSuccess(data.msg);
+      // }
+      // if (data.state == 3) {
+      //   switch (data.msg.plmn) {
+      //     case "0":
+      //       this.cmccArfcns = data.msg.arfcnResultList;
+      //       break; //跳出switch语句
+      //     case "1":
+      //       this.cuccArfcns = data.msg.arfcnResultList;
+      //       break;
+      //     case "2":
+      //       this.ctccArfcns = data.msg.arfcnResultList;
+      //       break;
+      //   }
+      //   this.openSuccess("扫网成功");
+      // }
+      // if (data.state == 4) {
+      //   this.openSuccess(data.msg);
+      //   this.loading = false;
+      //   this.getList();
+      // }
+      // if (data.state == -1) {
+      //   this.openFail(data.msg);
+      // }
+      // if (data.state == -2) {
+      //   this.openFail(data.msg);
+      // }
+      // if (data.state == -3) {
+      //   this.openFail(data.msg);
+      // }
+      // if (data.state == -4) {
+      //   this.openFail(data.msg);
+      //   this.loading = true;
+      // }
     },
     setOncloseMessage() {
       console.log("WebSocket连接关闭    状态码：" + this.websocket.readyState);

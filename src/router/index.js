@@ -55,6 +55,31 @@ export default new Router({
 export const asyncRouterMap = [
 
   {
+    path: '/target',
+    component: Layout,
+    redirect: 'noredirect',
+    alwaysShow: true,
+    name: 'target',
+    meta: {
+      title: '布控中标',
+      icon: 'chart'
+    },
+    children: [
+      {
+      path: 'targetNum',
+      component: _import('target/targetNum'),
+      name: 'targetNum',
+      meta: { title: '布控目标', noCache: true }
+    },
+    {
+      path: 'numberCompare',
+      component: _import('target/numberCompare'),
+      name: 'numberCompare',
+      meta: { title: '比对结果', noCache: true }
+    }]
+  },
+
+  {
     path: '/analysis',
     component: Layout,
     redirect: 'noredirect',
@@ -64,7 +89,8 @@ export const asyncRouterMap = [
       title: '数据分析',
       icon: 'chart'
     },
-    children: [{
+    children: [
+      {
       path: 'sort',
       component: _import('analysis/sort'),
       name: 'sort',
@@ -75,6 +101,17 @@ export const asyncRouterMap = [
       component: _import('analysis/chart'),
       name: 'chart',
       meta: { title: '图表统计', noCache: true }
+    }]
+  },
+  {
+    path: '',
+    component: Layout,
+    redirect: 'captureMac',
+    children: [{
+      path: 'captureMac',
+      component: _import('analysis/captureMac'),
+      name: 'captureMac',
+      meta: { title: 'mac采集', icon: 'dashboard', noCache: true }
     }]
   },
   { path: '*', redirect: '/404', hidden: true },

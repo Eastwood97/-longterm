@@ -2,7 +2,7 @@ import request from '@/utils/request'
 
 export function getFrequencyPoints(query) {
   return request({
-    url: '/devCommunication/scanNet?mode='+query,
+    url: '/devCommunication/scanNet',
     method: 'get',
     params: query
   })
@@ -32,6 +32,17 @@ export function getConfig(data) {
     data
   })
 }
+
+
+
+export function reboot(data) {
+  return request({
+    url: '/devCommunication/reboot?devId='+data,
+    method:'get',
+    data
+  })
+}
+
 
 export function queryNum(data) {
   return request({
